@@ -26,7 +26,9 @@ typedef struct os_threadpool {
 	 */
 	os_list_node_t head;
 
-	/* TODO: Define threapool / queue synchronization data. */
+	pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int stop;
 } os_threadpool_t;
 
 os_task_t *create_task(void (*f)(void *), void *arg, void (*destroy_arg)(void *));
