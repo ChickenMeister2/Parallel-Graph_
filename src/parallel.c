@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
     alarm(2);  // Set an alarm for 2 seconds
 
     while (!all_nodes_visited_flag && !stop) {
-        for(unsigned int  i = 0; i < 999999999; i++);  // Sleep for a short duration to avoid busy waiting
+		usleep(100000);
 	}
 	wait_for_completion(tp);  // Wait for all threads to finish
     destroy_threadpool(tp);
