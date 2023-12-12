@@ -41,35 +41,27 @@ void enqueue_task(os_threadpool_t *tp, os_task_t *t)
 	pthread_mutex_lock(&tp->mutex);
 	list_add_tail(&tp->head, &t->list);
 	pthread_cond_signal(&tp->cond);
-	pthread_mutex_unlock(&tp->mutex);}
+	pthread_mutex_unlock(&tp->mutex);
+}
 
-/*
-* Check if queue is empty.
-* This function should be called in a synchronized manner.
-*/
 static int queue_is_empty(os_threadpool_t *tp)
 {
 	return list_empty(&tp->head);
 }
 
-/*
-* Get a task from threadpool task queue.
-* Block if no task is available.
-* Return NULL if work is complete, i.e. no task will become available,
-* i.e. all threads are going to block.
-*/
-
 os_task_t *dequeue_task(os_threadpool_t *tp)
 {
 	os_task_t *t;
+
 	pthread_mutex_lock(&tp->mutex);
-	while (queue_is_empty(tp) && !tp->stop) {
+	while (queue_is_empty(tp) && !tp->stop)
 		pthread_cond_wait(&tp->cond, &tp->mutex);
-	}
+
 	if (tp->stop) {
 		pthread_mutex_unlock(&tp->mutex);
 		return NULL;
 	}
+
 	t = list_entry(tp->head.next, os_task_t, list);
 	list_del(&t->list);
 	pthread_mutex_unlock(&tp->mutex);

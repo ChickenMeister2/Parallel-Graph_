@@ -21,7 +21,6 @@ static os_threadpool_t *tp;
 static pthread_mutex_t sum_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t visited_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool visited[MAX_NODES] = {false};
-static bool enqueuing[MAX_NODES] = {false};
 static bool stop = false;
 
 typedef struct {
@@ -30,7 +29,8 @@ typedef struct {
 
 static GraphTaskArg task_args[MAX_NODES] = {{0}};
 
-static void process_node(unsigned int idx) {
+static void process_node(unsigned int idx)
+{
 	pthread_mutex_lock(&visited_mutex);
 
 	if (visited[idx] || stop) {
@@ -46,7 +46,6 @@ static void process_node(unsigned int idx) {
 	visited[idx] = true;
 	pthread_mutex_unlock(&visited_mutex);
 	
-
 	for (unsigned int iterator = 0; iterator < node->num_neighbours; iterator++) {
 		unsigned int neighbor_index = node->neighbours[iterator];
 		process_node(node->neighbours[iterator]);
@@ -54,7 +53,8 @@ static void process_node(unsigned int idx) {
 
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	FILE *input_file;
 
 	if (argc != 2) {
