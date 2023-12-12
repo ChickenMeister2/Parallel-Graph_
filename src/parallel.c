@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <signal.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include "os_graph.h"
 #include "os_threadpool.h"
@@ -12,21 +14,53 @@
 #include "utils.h"
 
 #define NUM_THREADS		4
-
+#define MAX_NODES 		1000
 static int sum;
 static os_graph_t *graph;
 static os_threadpool_t *tp;
-/* TODO: Define graph synchronization mechanisms. */
+static pthread_mutex_t sum_mutex = PTHREAD_MUTEX_INITIALIZER;  // Mutex for sum
+static pthread_mutex_t visited_mutex = PTHREAD_MUTEX_INITIALIZER;  // Mutex for visited
+static bool visited[MAX_NODES] = {false};  // Array to track visited nodes
+static bool enqueuing[MAX_NODES] = {false};  
+static bool stop = false;  // Variable to signal threadpool to stop
 
-/* TODO: Define graph task argument. */
+typedef struct {
+	unsigned int node_index;
+} GraphTaskArg;
 
-static void process_node(unsigned int idx)
-{
-	/* TODO: Implement thread-pool based processing of graph. */
+static GraphTaskArg task_args[MAX_NODES] = {{0}};
+static int all_nodes_visited_flag = 0;  // Flag to signal when all nodes are visited
+
+
+static void process_node(unsigned int idx) {
+	pthread_mutex_lock(&visited_mutex);
+
+	if (visited[idx] || stop) {
+		pthread_mutex_unlock(&visited_mutex);
+		return;
+	}
+
+	os_node_t *node = graph->nodes[idx];
+
+	pthread_mutex_lock(&sum_mutex);
+	sum += node->info;
+	pthread_mutex_unlock(&sum_mutex);
+	visited[idx] = true;
+	pthread_mutex_unlock(&visited_mutex);
+	
+
+	for (unsigned int iterator = 0; iterator < node->num_neighbours; iterator++) {
+		unsigned int neighbor_index = node->neighbours[iterator];
+		process_node(node->neighbours[iterator]);
+	}
+
 }
 
-int main(int argc, char *argv[])
-{
+void stop_program() {
+	stop = true;
+}
+
+int main(int argc, char *argv[]) {
 	FILE *input_file;
 
 	if (argc != 2) {
@@ -39,10 +73,18 @@ int main(int argc, char *argv[])
 
 	graph = create_graph_from_file(input_file);
 
-	/* TODO: Initialize graph synchronization mechanisms. */
 	tp = create_threadpool(NUM_THREADS);
 	process_node(0);
-	wait_for_completion(tp);
+
+	pthread_mutex_init(&visited_mutex, NULL);
+
+	os_task_t *neighbor_task = create_task(process_node, 0, NULL);
+	enqueue_task(tp, neighbor_task);
+
+	signal(SIGALRM, stop_program);
+	alarm(2);  // Set an alarm for 2 seconds
+
+	wait_for_completion(tp);  
 	destroy_threadpool(tp);
 
 	printf("%d", sum);
