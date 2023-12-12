@@ -18,19 +18,17 @@
 static int sum;
 static os_graph_t *graph;
 static os_threadpool_t *tp;
-static pthread_mutex_t sum_mutex = PTHREAD_MUTEX_INITIALIZER;  // Mutex for sum
-static pthread_mutex_t visited_mutex = PTHREAD_MUTEX_INITIALIZER;  // Mutex for visited
-static bool visited[MAX_NODES] = {false};  // Array to track visited nodes
-static bool enqueuing[MAX_NODES] = {false};  
-static bool stop = false;  // Variable to signal threadpool to stop
+static pthread_mutex_t sum_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t visited_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool visited[MAX_NODES] = {false};
+static bool enqueuing[MAX_NODES] = {false};
+static bool stop = false;
 
 typedef struct {
 	unsigned int node_index;
 } GraphTaskArg;
 
 static GraphTaskArg task_args[MAX_NODES] = {{0}};
-static int all_nodes_visited_flag = 0;  // Flag to signal when all nodes are visited
-
 
 static void process_node(unsigned int idx) {
 	pthread_mutex_lock(&visited_mutex);
@@ -56,10 +54,6 @@ static void process_node(unsigned int idx) {
 
 }
 
-void stop_program() {
-	stop = true;
-}
-
 int main(int argc, char *argv[]) {
 	FILE *input_file;
 
@@ -81,10 +75,7 @@ int main(int argc, char *argv[]) {
 	os_task_t *neighbor_task = create_task(process_node, 0, NULL);
 	enqueue_task(tp, neighbor_task);
 
-	signal(SIGALRM, stop_program);
-	alarm(2);  // Set an alarm for 2 seconds
-
-	wait_for_completion(tp);  
+	wait_for_completion(tp);
 	destroy_threadpool(tp);
 
 	printf("%d", sum);

@@ -123,7 +123,7 @@ os_threadpool_t *create_threadpool(unsigned int num_threads)
 	pthread_mutex_init(&tp->mutex, NULL);
 	pthread_cond_init(&tp->cond, NULL);
 
-	tp->stop = 0; 
+	tp->stop = 0;
 
 	tp->num_threads = num_threads;
 	tp->threads = malloc(num_threads * sizeof(*tp->threads));
